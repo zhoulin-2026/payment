@@ -42,11 +42,14 @@ public class AdminService {
     @Autowired
     private PayQrcodeDao payQrcodeDao;
     public CommonRes login(String user,String pass){
-        String u = settingDao.findById("user").get().getVvalue();
+        String u = settingDao.findById("user").map(Setting::getVvalue).orElse("");
+        if (u.isEmpty()){
+            return ResUtil.error("系统未初始化，请先配置管理员账号");
+        }
         if (!user.equals(u)){
             return ResUtil.error("账号或密码不正确");
         }
-        String p = settingDao.findById("pass").get().getVvalue();
+        String p = settingDao.findById("pass").map(Setting::getVvalue).orElse("");
         if (!pass.equals(p)){
             return ResUtil.error("账号或密码不正确");
         }
@@ -125,7 +128,7 @@ public class AdminService {
         return list;
     }
 
-    public CommonRes setBd(Integer id){
+    public CommonRes setBd(Long id){
         PayOrder payOrder = payOrderDao.getById(id);
         if (payOrder==null){
             return ResUtil.error("订单不存在");
@@ -178,13 +181,13 @@ public class AdminService {
         currentDate.set(Calendar.MINUTE, 0);
         currentDate.set(Calendar.SECOND, 0);
         Date tmp = (Date) currentDate.getTime();
-        String startDate = String.valueOf(tmp.getTime());
+        long startDate = tmp.getTime();
         currentDate = new GregorianCalendar();
         currentDate.set(Calendar.HOUR_OF_DAY, 23);
         currentDate.set(Calendar.MINUTE, 59);
         currentDate.set(Calendar.SECOND, 59);
         tmp = (Date) currentDate.getTime();
-        String endDate = String.valueOf(tmp.getTime());
+        long endDate = tmp.getTime();
 
         NumberFormat nf = NumberFormat.getNumberInstance();
         nf.setMaximumFractionDigits(2);
@@ -278,7 +281,7 @@ public class AdminService {
     }
 
     public CommonRes delLastOrder(){
-        payOrderDao.deleteByAfterCreateDate(String.valueOf(new Date().getTime()-7*86400*1000));
+        payOrderDao.deleteByAfterCreateDate(new Date().getTime()-7*86400*1000L);
         return ResUtil.success();
     }
 

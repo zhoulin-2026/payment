@@ -12,6 +12,7 @@ import com.vone.mq.dto.CreateOrderRes;
 import com.vone.mq.service.WebService;
 import com.vone.mq.utils.ResUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +35,18 @@ public class WebController {
     @Autowired
     private WebService webService;
 
+
+
+    /**
+     * 健康检查接口（用于 Render 保活）
+     */
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "ok");
+        result.put("timestamp", LocalDateTime.now().toString());
+        return result;
+    }
     @RequestMapping("/enQrcode")
     public void enQrcode(HttpServletResponse resp, String url) throws IOException {
         if (url != null && !"".equals(url)) {

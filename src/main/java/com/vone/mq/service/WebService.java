@@ -33,7 +33,10 @@ public class WebService {
     private PayQrcodeDao payQrcodeDao;
 
     public CommonRes createOrder(String payId, String param, Integer type, String price, String notifyUrl, String returnUrl, String sign){
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
+        if (key.isEmpty()){
+            return ResUtil.error("系统配置错误：key 未设置");
+        }
         String jsSign =  md5(payId+param+type+price+key);
         if (!sign.equals(jsSign)){
             return ResUtil.error("签名校验不通过");
@@ -48,7 +51,12 @@ public class WebService {
 
         String orderId = formatter.format(currentTime) + (int)(1000+Math.random()*(9999-1000+1));
 
-        int payQf = Integer.parseInt(settingDao.findById("payQf").get().getVvalue());
+        int payQf = 1;
+        try {
+            payQf = Integer.parseInt(settingDao.findById("payQf").map(Setting::getVvalue).orElse("1"));
+        } catch (NumberFormatException e) {
+            payQf = 1;
+        }
         //实际支付价格
         double reallyPrice = priceD;
 
@@ -77,13 +85,15 @@ public class WebService {
         }
 
         String payUrl = "";
+        String wxpay = settingDao.findById("wxpay").map(Setting::getVvalue).orElse("");
+        String zfbpay = settingDao.findById("zfbpay").map(Setting::getVvalue).orElse("");
         if (type == 1){
-            payUrl = settingDao.findById("wxpay").get().getVvalue();
+            payUrl = wxpay;
         }else if (type == 2){
-            payUrl = settingDao.findById("zfbpay").get().getVvalue();
+            payUrl = zfbpay;
         }
 
-        if (payUrl==""){
+        if (payUrl.isEmpty()){
             return ResUtil.error("请您先进入后台配置程序");
         }
 
@@ -122,14 +132,14 @@ public class WebService {
 
 
 
-        String timeOut = settingDao.findById("close").get().getVvalue();
+        String timeOut = settingDao.findById("close").map(Setting::getVvalue).orElse("30");
         CreateOrderRes createOrderRes = new CreateOrderRes(payId,orderId,type,priceD,reallyPrice,payUrl,isAuto,0,Integer.valueOf(timeOut),payOrder.getCreateDate());
 
         return ResUtil.success(createOrderRes);
     }
     public CommonRes closeOrder(String orderId,String sign){
 
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
         String jsSign =  md5(orderId+key);
         if (!sign.equals(jsSign)){
             return ResUtil.error("签名校验不通过");
@@ -150,7 +160,10 @@ public class WebService {
     }
 
     public CommonRes appHeart(String t,String sign){
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
+        if (key.isEmpty()){
+            return ResUtil.error("系统配置错误");
+        }
         String jssign = md5(t+key);
         if (!jssign.equals(sign)){
             return ResUtil.error("签名校验错误");
@@ -177,7 +190,10 @@ public class WebService {
     }
 
     public CommonRes appPush(Integer type,String price,String t,String sign){
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
+        if (key.isEmpty()){
+            return ResUtil.error("系统配置错误");
+        }
         long cz = Long.valueOf(t)-new Date().getTime();
 
         if (cz<0){
@@ -259,7 +275,7 @@ public class WebService {
             return ResUtil.error("云端订单编号不存在");
         }
 
-        String timeOut = settingDao.findById("close").get().getVvalue();
+        String timeOut = settingDao.findById("close").map(Setting::getVvalue).orElse("30");
         CreateOrderRes createOrderRes = new CreateOrderRes(
                 payOrder.getPayId(),payOrder.getOrderId(),payOrder.getType(),payOrder.getPrice(),payOrder.getReallyPrice()
                 ,payOrder.getPayUrl(),payOrder.getIsAuto(),payOrder.getState(),Integer.valueOf(timeOut),payOrder.getCreateDate());
@@ -280,7 +296,10 @@ public class WebService {
         if (payOrder.getState()==-1){
             return ResUtil.error("订单已过期");
         }
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
+        if (key.isEmpty()){
+            return ResUtil.error("系统配置错误");
+        }
         //执行通知
         String p = "payId="+payOrder.getPayId()+"&param="+payOrder.getParam()+"&type="+payOrder.getType()+"&price="+payOrder.getPrice()+"&reallyPrice="+payOrder.getReallyPrice();
         String sign = md5(payOrder.getPayId()+payOrder.getParam()+payOrder.getType()+payOrder.getPrice()+payOrder.getReallyPrice()+key);
@@ -295,16 +314,19 @@ public class WebService {
 
     public CommonRes getState(String t,String sign){
 
-        String key = settingDao.findById("key").get().getVvalue();
+        String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
+        if (key.isEmpty()){
+            return ResUtil.error("系统配置错误");
+        }
         String jsSign =  md5(t+key);
         if (!sign.equals(jsSign)){
             return ResUtil.error("签名校验不通过");
         }
 
         Map<String,String> map = new HashMap<>();
-        String state = settingDao.findById("jkstate").get().getVvalue();
-        String lastheart = settingDao.findById("lastheart").get().getVvalue();
-        String lastpay = settingDao.findById("lastpay").get().getVvalue();
+        String state = settingDao.findById("jkstate").map(Setting::getVvalue).orElse("0");
+        String lastheart = settingDao.findById("lastheart").map(Setting::getVvalue).orElse("0");
+        String lastpay = settingDao.findById("lastpay").map(Setting::getVvalue).orElse("0");
         map.put("state",state);
         map.put("lastheart",lastheart);
         map.put("lastpay",lastpay);

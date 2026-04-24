@@ -18,31 +18,31 @@ public interface PayOrderDao  extends JpaRepository<PayOrder,Long>, JpaSpecifica
 
     @Transactional
     @Modifying
-    @Query(value = "update pay_order p set p.close_date=?2,p.state=-1 where p.create_date<?1 and p.state=0", nativeQuery = true)
-    int setTimeout(String timeout,String closeTime);
+    @Query(value = "update pay_order set close_date=?2, state=-1 where create_date<?1 and state=0", nativeQuery = true)
+    int setTimeout(long timeout,long closeTime);
 
     @Transactional
     @Modifying
-    @Query(value = "update pay_order p set p.state=?1 where p.id=?2", nativeQuery = true)
+    @Query(value = "update pay_order set state=?1 where id=?2", nativeQuery = true)
     int setState(int state,long id);
 
     List<PayOrder> findAllByCloseDate(Long closeDate);
 
     @Query(value = "select * from pay_order where id = ?1", nativeQuery = true)
-    PayOrder getById(Integer id);
+    PayOrder getById(Long id);
 
     PayOrder findByReallyPriceAndStateAndType(double reallyPrice,int state,int type);
 
     PayOrder findByPayDate(Long payDate);
 
     @Query(value = "select count(*) from pay_order where create_date >= ?1 and create_date <= ?2", nativeQuery = true)
-    int getTodayCount(String startDate,String endDate);
+    int getTodayCount(long startDate,long endDate);
 
     @Query(value = "select count(*) from pay_order where create_date >= ?1 and create_date <= ?2 and state = ?3", nativeQuery = true)
-    int getTodayCount(String startDate,String endDate,int state);
+    int getTodayCount(long startDate,long endDate,int state);
 
     @Query(value = "select sum(price) from pay_order where create_date >= ?1 and create_date <= ?2 and state = ?3", nativeQuery = true)
-    double getTodayCountMoney(String startDate,String endDate,int state);
+    double getTodayCountMoney(long startDate,long endDate,int state);
 
     @Query(value = "select count(*) from pay_order", nativeQuery = true)
     int getCount();
@@ -61,6 +61,6 @@ public interface PayOrderDao  extends JpaRepository<PayOrder,Long>, JpaSpecifica
     @Transactional
     @Modifying
     @Query(value = "delete from pay_order where create_date<?1", nativeQuery = true)
-    int deleteByAfterCreateDate(String date);
+    int deleteByAfterCreateDate(long date);
 
 }

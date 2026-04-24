@@ -130,7 +130,7 @@ public class AdminController {
         return adminService.getOrders(page, limit, type,state);
     }
     @RequestMapping("/admin/setBd")
-    public CommonRes setBd(HttpSession session,Integer id){
+    public CommonRes setBd(HttpSession session,Long id){
         if (session.getAttribute("login")==null){
             return ResUtil.error("未登录");
         }

@@ -21,37 +21,38 @@ public class QuartzService {
     @Autowired
     private TmpPriceDao tmpPriceDao;
 
-
     @Scheduled(fixedRate = 30000)
     public void timerToZZP(){
 
         try {
             System.out.println("开始清理过期订单...");
-            String timeout = settingDao.findById("close").get().getVvalue();
-            String closeTime = String.valueOf(new Date().getTime());
-            timeout = String.valueOf(new Date().getTime() - Integer.valueOf(timeout)*60*1000);
+            String timeoutSetting = settingDao.findById("close").map(Setting::getVvalue).orElse("30");
+            long closeTime = new Date().getTime();
+            long timeout = closeTime - Integer.parseInt(timeoutSetting)*60*1000L;
 
             int row = payOrderDao.setTimeout(timeout,closeTime);
 
-            List<PayOrder> payOrders = payOrderDao.findAllByCloseDate(Long.valueOf(closeTime));
+            List<PayOrder> payOrders = payOrderDao.findAllByCloseDate(closeTime);
             for (PayOrder payOrder: payOrders) {
                 tmpPriceDao.delprice(payOrder.getType()+"-"+payOrder.getReallyPrice());
             }
             System.out.println(row+"成功清理" + row + "个订单");
         }catch (Exception e){
+            System.out.println("清理订单出错：" + e.getMessage());
             e.printStackTrace();
         }
 
-        String lastheart = settingDao.findById("lastheart").get().getVvalue();
-        String state = settingDao.findById("jkstate").get().getVvalue();
-        if (state.equals("1") && new Date().getTime() - Long.valueOf(lastheart) > 60*1000){
-            Setting setting = new Setting();
-            setting.setVkey("jkstate");
-            setting.setVvalue("0");
-            settingDao.save(setting);
+        try {
+            String lastheart = settingDao.findById("lastheart").map(Setting::getVvalue).orElse("0");
+            String state = settingDao.findById("jkstate").map(Setting::getVvalue).orElse("0");
+            if (state.equals("1") && new Date().getTime() - Long.parseLong(lastheart) > 60*1000){
+                Setting setting = new Setting();
+                setting.setVkey("jkstate");
+                setting.setVvalue("0");
+                settingDao.save(setting);
+            }
+        } catch (Exception e) {
+            System.out.println("检查心跳出错：" + e.getMessage());
         }
-
-
-
     }
 }

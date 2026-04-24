@@ -2,8 +2,10 @@ package com.vone.mq.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
+@Table(name = "setting")
 public class Setting {
     @Id
     private String vkey;
