@@ -53,6 +53,9 @@ public class PayOrder {
     //二维码内容
     private String payUrl;
 
+    //会员类型ID（可选）
+    private Long memberTypeId;
+
     public String getPayUrl() {
         return payUrl;
     }
@@ -171,6 +174,14 @@ public class PayOrder {
 
     public void setIsAuto(int isAuto) {
         this.isAuto = isAuto;
+    }
+
+    public Long getMemberTypeId() {
+        return memberTypeId;
+    }
+
+    public void setMemberTypeId(Long memberTypeId) {
+        this.memberTypeId = memberTypeId;
     }
 
     @Override

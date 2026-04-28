@@ -6,6 +6,8 @@ import com.vone.mq.dao.SettingDao;
 import com.vone.mq.dao.TmpPriceDao;
 import com.vone.mq.dto.CommonRes;
 import com.vone.mq.dto.CreateOrderRes;
+import com.vone.mq.entity.MemberInfo;
+import com.vone.mq.entity.MemberType;
 import com.vone.mq.entity.PayOrder;
 import com.vone.mq.entity.PayQrcode;
 import com.vone.mq.entity.Setting;
@@ -31,8 +33,14 @@ public class WebService {
     private TmpPriceDao tmpPriceDao;
     @Autowired
     private PayQrcodeDao payQrcodeDao;
+    @Autowired
+    private MemberService memberService;
 
     public CommonRes createOrder(String payId, String param, Integer type, String price, String notifyUrl, String returnUrl, String sign){
+        return createOrderWithMember(payId, param, type, price, notifyUrl, returnUrl, sign, null);
+    }
+
+    public CommonRes createOrderWithMember(String payId, String param, Integer type, String price, String notifyUrl, String returnUrl, String sign, String memberTypeCode){
         String key = settingDao.findById("key").map(Setting::getVvalue).orElse("");
         if (key.isEmpty()){
             return ResUtil.error("系统配置错误：key 未设置");
@@ -127,6 +135,18 @@ public class WebService {
         payOrder.setState(0);
         payOrder.setIsAuto(isAuto);
         payOrder.setPayUrl(payUrl);
+
+        // 处理会员类型（可选）
+        Long memberTypeId = null;
+        if (memberTypeCode != null && !memberTypeCode.isEmpty()) {
+            MemberType memberType = memberService.validateMemberType(memberTypeCode);
+            if (memberType != null) {
+                memberTypeId = memberType.getId();
+                payOrder.setMemberTypeId(memberTypeId);
+            } else {
+                System.out.println("警告：无效的会员类型代码: " + memberTypeCode);
+            }
+        }
 
         payOrderDao.save(payOrder);
 
@@ -243,8 +263,42 @@ public class WebService {
             payOrder.setCloseDate(new Date().getTime());
             payOrderDao.save(payOrder);
 
+            // 检查是否需要生成会员
+            if (payOrder.getMemberTypeId() != null) {
+                try {
+                    MemberInfo memberInfo = memberService.createMember(
+                        payOrder.getMemberTypeId(), 
+                        payOrder.getOrderId(), 
+                        payOrder.getPayId()
+                    );
+                    if (memberInfo != null) {
+                        System.out.println("会员生成成功: " + memberInfo.getMemberCode());
+                    }
+                } catch (Exception e) {
+                    System.err.println("会员生成失败: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
             //执行通知
             String p = "payId="+payOrder.getPayId()+"&param="+payOrder.getParam()+"&type="+payOrder.getType()+"&price="+payOrder.getPrice()+"&reallyPrice="+payOrder.getReallyPrice();
+            
+            // 如果有会员码，添加到回调参数中
+            if (payOrder.getMemberTypeId() != null) {
+                MemberInfo memberInfo = memberService.createMember(
+                    payOrder.getMemberTypeId(),
+                    payOrder.getOrderId(),
+                    payOrder.getPayId()
+                );
+                if (memberInfo != null) {
+                    p = p + "&memberCode=" + memberInfo.getMemberCode();
+                    MemberType memberType = memberService.validateMemberTypeId(payOrder.getMemberTypeId());
+                    if (memberType != null) {
+                        p = p + "&memberType=" + memberType.getTypeCode();
+                    }
+                }
+            }
+            
             sign = md5(payOrder.getPayId()+payOrder.getParam()+payOrder.getType()+payOrder.getPrice()+payOrder.getReallyPrice()+key);
             p = p+"&sign="+sign;
             String url = payOrder.getNotifyUrl();
@@ -302,6 +356,23 @@ public class WebService {
         }
         //执行通知
         String p = "payId="+payOrder.getPayId()+"&param="+payOrder.getParam()+"&type="+payOrder.getType()+"&price="+payOrder.getPrice()+"&reallyPrice="+payOrder.getReallyPrice();
+        
+        // 如果有会员码，添加到参数中
+        if (payOrder.getMemberTypeId() != null) {
+            MemberInfo memberInfo = memberService.createMember(
+                payOrder.getMemberTypeId(),
+                payOrder.getOrderId(),
+                payOrder.getPayId()
+            );
+            if (memberInfo != null) {
+                p = p + "&memberCode=" + memberInfo.getMemberCode();
+                MemberType memberType = memberService.validateMemberTypeId(payOrder.getMemberTypeId());
+                if (memberType != null) {
+                    p = p + "&memberType=" + memberType.getTypeCode();
+                }
+            }
+        }
+        
         String sign = md5(payOrder.getPayId()+payOrder.getParam()+payOrder.getType()+payOrder.getPrice()+payOrder.getReallyPrice()+key);
         p = p+"&sign="+sign;
         String url = payOrder.getReturnUrl();

@@ -128,10 +128,11 @@ public class WebController {
      * @param returnUrl 支付完成后同步跳转地址，将会携带参数跳转
      * @param sign      签名认证 签名方式为 md5(payId + param + type + price + 通讯密钥)
      * @param isHtml    0返回json数据 1跳转到支付页面
+     * @param memberType 会员类型代码（可选）
      * @return
      */
     @RequestMapping("/createOrder")
-    public String createOrder(String payId, String param, Integer type, String price, String notifyUrl, String returnUrl, String sign, Integer isHtml) {
+    public String createOrder(String payId, String param, Integer type, String price, String notifyUrl, String returnUrl, String sign, Integer isHtml, String memberType) {
         if (payId == null || payId.equals("")) {
             return new Gson().toJson(ResUtil.error("请传入商户订单号"));
         }
@@ -167,7 +168,7 @@ public class WebController {
         if (isHtml == null) {
             isHtml = 0;
         }
-        CommonRes commonRes = webService.createOrder(payId, param, type, price, notifyUrl, returnUrl, sign);
+        CommonRes commonRes = webService.createOrderWithMember(payId, param, type, price, notifyUrl, returnUrl, sign, memberType);
         if (isHtml == 0) {
             String res = new Gson().toJson(commonRes);
             return res;
