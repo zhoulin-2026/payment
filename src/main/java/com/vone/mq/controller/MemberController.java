@@ -74,6 +74,8 @@ public class MemberController {
     @RequestMapping("/getMemberTypes")
     public String getMemberTypes() {
         List<MemberType> memberTypes = memberService.getActiveMemberTypes();
+        //排序按ID
+        memberTypes.sort((mt1, mt2) -> mt1.getId().compareTo(mt2.getId()));
         
         // 转换为前端友好的格式
         List<Map<String, Object>> resultList = new java.util.ArrayList<>();
