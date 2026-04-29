@@ -136,10 +136,18 @@ public class WebService {
         payOrder.setIsAuto(isAuto);
         payOrder.setPayUrl(payUrl);
 
-        // 处理会员类型（可选）
+        // 处理会员类型（可选，兼容会员ID或typeCode）
         Long memberTypeId = null;
         if (memberTypeCode != null && !memberTypeCode.isEmpty()) {
-            MemberType memberType = memberService.validateMemberType(memberTypeCode);
+            MemberType memberType = null;
+            try {
+                memberType = memberService.validateMemberTypeId(Long.valueOf(memberTypeCode));
+            } catch (NumberFormatException ignore) {
+                // 不是数字时按 typeCode 兼容处理
+            }
+            if (memberType == null) {
+                memberType = memberService.validateMemberType(memberTypeCode);
+            }
             if (memberType != null) {
                 memberTypeId = memberType.getId();
                 payOrder.setMemberTypeId(memberTypeId);

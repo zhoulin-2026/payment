@@ -52,6 +52,7 @@ public class WebController {
         if (url != null && !"".equals(url)) {
             ServletOutputStream stream = null;
             try {
+                url = java.net.URLDecoder.decode(url, java.nio.charset.StandardCharsets.UTF_8.name());
                 int width = 200;//图片的宽度
                 int height = 200;//高度
                 stream = resp.getOutputStream();
@@ -128,7 +129,7 @@ public class WebController {
      * @param returnUrl 支付完成后同步跳转地址，将会携带参数跳转
      * @param sign      签名认证 签名方式为 md5(payId + param + type + price + 通讯密钥)
      * @param isHtml    0返回json数据 1跳转到支付页面
-     * @param memberType 会员类型代码（可选）
+     * @param memberType 会员类型编号或代码（可选）
      * @return
      */
     @RequestMapping("/createOrder")
